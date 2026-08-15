@@ -1,6 +1,6 @@
 <p align="center"><img src="docs/assets/banner.png" alt="PlatePrep — from field photographs to annotation-ready settlement-plate imagery" width="100%"></p>
 
-<p align="center"><a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-1.0.4-176578?style=flat-square&labelColor=0A2F3A" alt="Version"></a> <a href="LICENSE"><img src="https://img.shields.io/badge/license-CC%20BY%204.0-4E9346?style=flat-square&labelColor=0A2F3A" alt="License: CC BY 4.0"></a> <a href="https://www.projetobioe.com/plateprep.html"><img src="https://img.shields.io/badge/live%20app-projetobioe.com-1E7D91?style=flat-square&labelColor=0A2F3A" alt="Live app"></a> <a href="#"><img src="https://img.shields.io/badge/interface-EN%20%2F%20PT-84BFCC?style=flat-square&labelColor=0A2F3A" alt="Bilingual"></a> <a href="CITATION.cff"><img src="https://img.shields.io/badge/cite-CITATION.cff-DCEEF2?style=flat-square&labelColor=0A2F3A" alt="Cite"></a></p>
+<p align="center"><a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-1.0.4-176578?style=flat-square&labelColor=0A2F3A" alt="Version"></a> <a href="LICENSE"><img src="https://img.shields.io/badge/license-CC%20BY%204.0-4E9346?style=flat-square&labelColor=0A2F3A" alt="License: CC BY 4.0"></a> <a href="https://www.projetobioe.com/plateprep.html"><img src="https://img.shields.io/badge/live%20app-projetobioe.com-1E7D91?style=flat-square&labelColor=0A2F3A" alt="Live app"></a> <a href="#"><img src="https://img.shields.io/badge/interface-EN%20%2F%20PT-84BFCC?style=flat-square&labelColor=0A2F3A" alt="Bilingual"></a> <a href="https://doi.org/10.5281/zenodo.21959574"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.21959574.svg" alt="DOI"></a> <a href="CITATION.cff"><img src="https://img.shields.io/badge/cite-CITATION.cff-DCEEF2?style=flat-square&labelColor=0A2F3A" alt="Cite"></a></p>
 
 **Das fotos de campo à imagem de placa de assentamento pronta para anotação — no navegador.**
 
@@ -84,9 +84,14 @@ embutido como modelo e é totalmente editável — inclusive a legenda — para 
 
 ## Como citar
 
-Se usar o PlatePrep, cite-o — ver [`CITATION.cff`](CITATION.cff) (o botão *Cite this repository*
-do GitHub usa esse arquivo). Um artigo de métodos descrevendo e validando o pipeline está em
-preparação; esta seção será atualizada com a referência e o DOI da versão arquivada.
+Se usar o PlatePrep, cite a versão arquivada do software:
+
+> Galembeck, E. & Schlosser, C. F. (2026). *PlatePrep: browser-based preparation of settlement-plate imagery for annotation platforms* (v1.0.4) [Software]. Zenodo. https://doi.org/10.5281/zenodo.21959575
+
+DOI conceitual (sempre resolve para a versão mais recente): https://doi.org/10.5281/zenodo.21959574 · Metadados
+legíveis por máquina em [`CITATION.cff`](CITATION.cff) (botão *Cite this repository* do GitHub). Um
+artigo de métodos descrevendo e validando o pipeline está em submissão; esta seção será atualizada
+com a referência.
 
 ## Contribuindo
 

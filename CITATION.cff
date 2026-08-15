@@ -2,11 +2,19 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it using these metadata."
 title: "PlatePrep: browser-based preparation of settlement-plate imagery for annotation platforms"
 version: 1.0.4
+doi: 10.5281/zenodo.21959575
 date-released: 2026-08-15
 license: CC-BY-4.0
 type: software
 repository-code: "https://github.com/The-Bioe-Project/plateprep"
 url: "https://www.projetobioe.com/plateprep.html"
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.21959574
+    description: "Concept DOI — resolves to the latest version"
+  - type: doi
+    value: 10.5281/zenodo.21959575
+    description: "Version DOI — v1.0.4"
 abstract: >-
   Single-file, bilingual (English/Portuguese) browser application that prepares
   settlement-plate campaign photographs for annotation: campaign metadata from
