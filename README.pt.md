@@ -1,4 +1,6 @@
-# PlatePrep
+<p align="center"><img src="docs/assets/banner.png" alt="PlatePrep — from field photographs to annotation-ready settlement-plate imagery" width="100%"></p>
+
+<p align="center"><a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-1.0.4-176578?style=flat-square&labelColor=0A2F3A" alt="Version"></a> <a href="LICENSE"><img src="https://img.shields.io/badge/license-CC%20BY%204.0-4E9346?style=flat-square&labelColor=0A2F3A" alt="License: CC BY 4.0"></a> <a href="https://www.projetobioe.com/plateprep.html"><img src="https://img.shields.io/badge/live%20app-projetobioe.com-1E7D91?style=flat-square&labelColor=0A2F3A" alt="Live app"></a> <a href="#"><img src="https://img.shields.io/badge/interface-EN%20%2F%20PT-84BFCC?style=flat-square&labelColor=0A2F3A" alt="Bilingual"></a> <a href="CITATION.cff"><img src="https://img.shields.io/badge/cite-CITATION.cff-DCEEF2?style=flat-square&labelColor=0A2F3A" alt="Cite"></a></p>
 
 **Das fotos de campo à imagem de placa de assentamento pronta para anotação — no navegador.**
 
@@ -30,6 +32,10 @@ geometria de cada recorte.
 | **3 · Seleção** | Galeria de miniaturas; cada foto mostra a placa da triagem; marque as que serão recortadas (as já cortadas vêm desmarcadas). |
 | **4 · Recorte** | Clique os 4 cantos da placa → retificação por homografia com **escala fixa** (lado da imagem = lado da placa). A placa vem preenchida pela triagem; tratamento, nome e sequência são automáticos. `Enter` salva e avança. |
 | **5 · Finalizar** | A pasta de saída recebe os recortes (`Placa##_T?_EXP_AAAA_MM_DD_##.JPG`), **`metadata_coralnet.csv`** (pronto para importar), **`triage_mapping.csv`** e **`crop_manifest.csv/.json`** (os 4 cantos de cada recorte). |
+
+### O fluxo, em imagens
+
+<table><tr><td width="50%"><img src="docs/assets/step1-setup.png" alt="Etapa 1 — Configurar"><br><sub><b>1 · Configurar</b> — metadados da campanha pré-preenchidos do EXIF/GPS; clima com um clique (Open-Meteo).</sub></td><td width="50%"><img src="docs/assets/step2-triage.png" alt="Etapa 2 — Triagem"><br><sub><b>2 · Triagem</b> — clique na primeira foto de cada placa; o resto é agrupado e numerado.</sub></td></tr><tr><td><img src="docs/assets/step4-crop.png" alt="Etapa 4 — Recorte"><br><sub><b>4 · Recorte</b> — quatro cantos → homografia em escala fixa; placa herdada da triagem; nome e notas automáticos.</sub></td><td><img src="docs/assets/step5-finish.png" alt="Etapa 5 — Finalizar"><br><sub><b>5 · Finalizar</b> — recortes, CSV de metadados, mapa da triagem e manifesto gravados na pasta de saída.</sub></td></tr></table>
 
 Instruções completas, com capturas de tela, nos manuais: [`docs/Manual_PlatePrep_PT.pdf`](docs/Manual_PlatePrep_PT.pdf) · [`docs/Manual_PlatePrep_EN.pdf`](docs/Manual_PlatePrep_EN.pdf).
 
@@ -99,3 +105,5 @@ Research Project – Regular, Call for Proposals (2025), 1st Cycle, processo **#
 
 Dados de clima: [Open-Meteo](https://open-meteo.com) (serviço histórico baseado na reanálise ERA5;
 serviço marinho).
+
+<p align="center"><img src="docs/assets/footer.png" alt="Bioē · Institute of Biology · Unicamp · FAPESP #2025/0787809 · CC BY 4.0" width="100%"></p>

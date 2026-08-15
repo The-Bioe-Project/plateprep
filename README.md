@@ -1,4 +1,6 @@
-# PlatePrep
+<p align="center"><img src="docs/assets/banner.png" alt="PlatePrep — from field photographs to annotation-ready settlement-plate imagery" width="100%"></p>
+
+<p align="center"><a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-1.0.4-176578?style=flat-square&labelColor=0A2F3A" alt="Version"></a> <a href="LICENSE"><img src="https://img.shields.io/badge/license-CC%20BY%204.0-4E9346?style=flat-square&labelColor=0A2F3A" alt="License: CC BY 4.0"></a> <a href="https://www.projetobioe.com/plateprep.html"><img src="https://img.shields.io/badge/live%20app-projetobioe.com-1E7D91?style=flat-square&labelColor=0A2F3A" alt="Live app"></a> <a href="#"><img src="https://img.shields.io/badge/interface-EN%20%2F%20PT-84BFCC?style=flat-square&labelColor=0A2F3A" alt="Bilingual"></a> <a href="CITATION.cff"><img src="https://img.shields.io/badge/cite-CITATION.cff-DCEEF2?style=flat-square&labelColor=0A2F3A" alt="Cite"></a></p>
 
 **From field photographs to annotation-ready settlement-plate imagery — in the browser.**
 
@@ -27,6 +29,10 @@ physical scale → named images + ready-to-import CSVs + a crop-geometry manifes
 | **3 · Selection** | Thumbnail gallery; each photo shows its triage plate; check the ones to crop (already-cropped photos start unchecked). |
 | **4 · Crop** | Click the plate's 4 corners → homography rectification at **fixed scale** (image side = plate side). The plate is pre-filled from triage; treatment, file name and sequence are automatic. `Enter` saves and advances. |
 | **5 · Finish** | The output folder receives the crops (`Plate##_T?_EXP_YYYY_MM_DD_##.JPG`), **`metadata_coralnet.csv`** (import-ready), **`triage_mapping.csv`** and **`crop_manifest.csv/.json`** (the 4 corners of every crop). |
+
+### The workflow, in pictures
+
+<table><tr><td width="50%"><img src="docs/assets/step1-setup.png" alt="Step 1 — Set up"><br><sub><b>1 · Set up</b> — campaign metadata pre-filled from EXIF/GPS; one-click weather (Open-Meteo).</sub></td><td width="50%"><img src="docs/assets/step2-triage.png" alt="Step 2 — Triage"><br><sub><b>2 · Triage</b> — click the first photo of each plate; the rest is grouped and numbered.</sub></td></tr><tr><td><img src="docs/assets/step4-crop.png" alt="Step 4 — Crop"><br><sub><b>4 · Crop</b> — four corners → fixed-scale homography; plate inherited from triage; name and notes automatic.</sub></td><td><img src="docs/assets/step5-finish.png" alt="Step 5 — Finish"><br><sub><b>5 · Finish</b> — crops, metadata CSV, triage map and crop manifest written to the output folder.</sub></td></tr></table>
 
 Full instructions, with screenshots, in the manuals: [`docs/Manual_PlatePrep_EN.pdf`](docs/Manual_PlatePrep_EN.pdf) · [`docs/Manual_PlatePrep_PT.pdf`](docs/Manual_PlatePrep_PT.pdf).
 
@@ -97,3 +103,5 @@ grant **#2025/0787809**.
 
 Weather data: [Open-Meteo](https://open-meteo.com) (historical service based on the ERA5
 reanalysis; marine service).
+
+<p align="center"><img src="docs/assets/footer.png" alt="Bioē · Institute of Biology · Unicamp · FAPESP #2025/0787809 · CC BY 4.0" width="100%"></p>
