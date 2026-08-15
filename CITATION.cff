@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using these metadata."
+title: "PlatePrep: browser-based preparation of settlement-plate imagery for annotation platforms"
+version: 1.0.4
+date-released: 2026-08-15
+license: CC-BY-4.0
+type: software
+repository-code: "https://github.com/The-Bioe-Project/plateprep"
+url: "https://www.projetobioe.com/plateprep.html"
+abstract: >-
+  Single-file, bilingual (English/Portuguese) browser application that prepares
+  settlement-plate campaign photographs for annotation: campaign metadata from
+  EXIF/GPS with optional weather retrieval, per-plate triage, four-corner homography
+  cropping at fixed physical scale, and output of annotation-ready images, an
+  import-ready metadata table, a triage map and a crop manifest recording the four
+  source corners of every crop.
+keywords:
+  - benthic image analysis
+  - biofouling
+  - settlement plates
+  - homography
+  - percent cover
+  - point count
+  - image preprocessing
+  - CoralNet
+authors:
+  - family-names: Galembeck
+    given-names: Eduardo
+    affiliation: "Institute of Biology, University of Campinas (Unicamp), Campinas, SP, Brazil"
+  - family-names: Schlosser
+    given-names: "Carolina F."
+    affiliation: "Centre for Marine Biology, University of São Paulo (CEBIMar/USP), São Sebastião, SP, Brazil"
