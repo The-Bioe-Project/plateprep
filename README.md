@@ -84,7 +84,7 @@ as a template and fully editable — including the treatment legend — for any 
 
 If you use PlatePrep, please cite the archived software version:
 
-> Galembeck, E. & Schlosser, C. F. (2026). *PlatePrep: browser-based preparation of settlement-plate imagery for annotation platforms* (v1.0.5) [Software]. Zenodo. https://doi.org/10.5281/zenodo.21959574
+> Galembeck, E. & Schlosser, C. F. (2026). *PlatePrep: browser-based preparation of settlement-plate imagery for annotation platforms* (v1.0.5) [Software]. Zenodo. https://doi.org/10.5281/zenodo.21959935
 
 Concept DOI (always resolves to the latest version): https://doi.org/10.5281/zenodo.21959574 · Machine-readable
 metadata in [`CITATION.cff`](CITATION.cff) (GitHub's *Cite this repository* button). A methods paper
