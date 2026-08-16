@@ -163,7 +163,7 @@
     </div>
   </div>
   <span class="pill" id="counter">—</span>
-  <span class="pill" id="ver" title="build">v1.1.0 · 2026-08-16</span>
+  <span class="pill" id="ver" title="build">v1.1.1 · 2026-08-16</span>
   <span class="sp"></span>
   <span class="lab" id="outSizeWrap" style="display:none"><span data-i18n="outRes"></span>
     <select id="sizeSel" style="margin-left:5px">
@@ -209,6 +209,32 @@
       </div>
       <div class="warnbox" id="fsWarn" style="display:none"></div>
       <p class="note" data-i18n="welcomeNote"></p>
+      <p class="note" style="text-align:center;margin-top:14px"><a href="#" id="lnkRederive" data-i18n="rdLink"></a></p>
+    </div>
+  </div>
+
+  <!-- ===================== MODAL: RE-DERIVAR DE MANIFESTO ===================== -->
+  <div id="rdModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:60;align-items:center;justify-content:center">
+    <div style="max-width:640px;width:94%;max-height:90vh;overflow:auto;background:var(--panel);border:1px solid #33415a;border-radius:12px;padding:18px 22px;box-shadow:0 10px 40px rgba(0,0,0,.6)">
+      <h2 data-i18n="rdTitle" style="margin-top:0"></h2>
+      <p class="note" data-i18n="rdIntro"></p>
+      <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0">
+        <button id="rdPickSrc" data-i18n="rdPickSrc"></button><span class="note" id="rdSrcInfo">—</span>
+      </div>
+      <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0">
+        <button id="rdPickMan" data-i18n="rdPickMan"></button><span class="note" id="rdManInfo">—</span>
+      </div>
+      <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0">
+        <button id="rdPickOut" data-i18n="rdPickOut"></button><span class="note" id="rdOutInfo">—</span>
+      </div>
+      <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0">
+        <label data-i18n="rdPlate"></label><input id="rdPlateCm" type="number" step="0.1" min="1" value="10" style="width:70px"> cm
+      </div>
+      <div class="row" style="gap:8px;margin-top:12px">
+        <button class="primary" id="rdRun" data-i18n="rdRun" disabled></button>
+        <button id="rdClose" data-i18n="rdClose"></button>
+      </div>
+      <pre id="rdLog" class="note" style="white-space:pre-wrap;max-height:220px;overflow:auto;margin-top:10px"></pre>
     </div>
   </div>
 
@@ -454,6 +480,13 @@ pt:{
   welcomeLi4:'Selecione as fotos e recorte: 4 cantos → Enter salva e avança.',
   welcomeLi5:'Finalize: imagens recortadas + CSVs prontos na pasta de saída.',
   btnStart:'Escolher pastas e começar',
+  rdLink:'Re-derivar recortes a partir de um manifesto…',
+  rdTitle:'Re-derivar recortes de um manifesto',
+  rdIntro:'Reproduz recortes já feitos: para cada linha do(s) manifesto(s) (crop_manifest.csv/.json ou manifesto_recortes.*), localiza a foto original pelo nome na pasta escolhida (busca recursiva), aplica os 4 cantos registrados (reescalados se a foto tiver outra resolução) e grava o recorte com a versão atual do programa. Saída: recortes + crop_manifest.csv/.json em coordenadas nativas + rederive_log.csv + render_audit.csv.',
+  rdPickSrc:'1 · Pasta das fotos originais',rdPickMan:'2 · Manifesto(s)',rdPickOut:'3 · Pasta de saída',
+  rdPlate:'Lado da placa:',rdRun:'Iniciar',rdClose:'Fechar',
+  rdNoFS:'Este modo requer a API File System Access (Chrome/Edge em HTTPS ou localhost).',
+  rdDone:'Concluído',rdMissing:'sem foto-fonte',
   welcomeNote:'Nada é enviado para a internet (exceto a busca opcional de clima). Em navegadores sem a API File System Access, os recortes são baixados em um arquivo .zip.',
   fsWarn:'ℹ️ Este navegador não permite salvar direto na pasta. Modo alternativo: você seleciona a pasta de entrada e baixa um .zip com os resultados ao finalizar. Para salvar direto, use o Google Chrome.',
   cfgCampaign:'Campanha',cfgExp:'Experimento',cfgSite:'Local / sítio',cfgDate:'Data da campanha',
@@ -538,6 +571,13 @@ en:{
   welcomeLi4:'Select photos and crop: 4 corners → Enter saves and advances.',
   welcomeLi5:'Finish: cropped images + CSVs ready in the output folder.',
   btnStart:'Choose folders and start',
+  rdLink:'Re-derive crops from a manifest…',
+  rdTitle:'Re-derive crops from a manifest',
+  rdIntro:'Reproduces crops made earlier: for each row of the manifest(s) (crop_manifest.csv/.json or manifesto_recortes.*), finds the source photograph by name in the chosen folder (recursive search), applies the recorded four corners (rescaled if the photograph has a different resolution) and writes the crop with the current version of the program. Output: crops + crop_manifest.csv/.json in native coordinates + rederive_log.csv + render_audit.csv.',
+  rdPickSrc:'1 · Source-photo folder',rdPickMan:'2 · Manifest(s)',rdPickOut:'3 · Output folder',
+  rdPlate:'Plate side:',rdRun:'Start',rdClose:'Close',
+  rdNoFS:'This mode needs the File System Access API (Chrome/Edge over HTTPS or localhost).',
+  rdDone:'Done',rdMissing:'no source photo',
   welcomeNote:'Nothing is sent to the internet (except the optional weather lookup). In browsers without the File System Access API, results are downloaded as a .zip file.',
   fsWarn:'ℹ️ This browser cannot save directly to a folder. Fallback mode: you select the input folder and download a .zip with the results at the end. For direct saving, use Google Chrome.',
   cfgCampaign:'Campaign',cfgExp:'Experiment',cfgSite:'Site',cfgDate:'Campaign date',
@@ -1569,7 +1609,7 @@ function imagejMacro(){
   const items=Object.values(manifest);if(!items.length)return '';
   const sz=items[0].size,cm=items[0].plateCm||plateSizeCm();const ppc=sz/cm;
   const mixed=items.some(m=>m.size!==sz||(m.plateCm||cm)!==cm);
-  return ['// PlatePrep v1.1.0 — ImageJ/Fiji spatial calibration for the crops in this folder.',
+  return ['// PlatePrep v1.1.1 — ImageJ/Fiji spatial calibration for the crops in this folder.',
    '// Every crop is the plate: '+sz+' px = '+cm+' cm  ->  '+(+ppc.toFixed(3))+' px/cm.',
    '// The same density is embedded in each JPG (JFIF header) for tools that read it (Photoshop, GIMP, QGIS, Python/PIL...);',
    '// ImageJ ignores JFIF density, so run this macro once per session (Plugins > Macros > Run...) — the scale is set as Global.',
@@ -1585,7 +1625,7 @@ async function writeAll(){
   }
   const csv=rows.map(r=>r.join(',')).join('\n');
   const ijm=imagejMacro();
-  const jstr=JSON.stringify({tool:'PlatePrep v1.1.0',generated:new Date().toISOString(),count:Object.keys(manifest).length,items:manifest},null,1);
+  const jstr=JSON.stringify({tool:'PlatePrep v1.1.1',generated:new Date().toISOString(),count:Object.keys(manifest).length,items:manifest},null,1);
   await writeMetaCSV();
   const tri=triageUsed?triageCSV():null;
   if(outDir){
@@ -1613,6 +1653,123 @@ function dl(blob,name){const a=document.createElement('a');a.href=URL.createObje
 
 /* ============================ BOOT ============================ */
 document.getElementById('btnStart').onclick=start;
+
+/* ==================== RE-DERIVAÇÃO A PARTIR DE MANIFESTO (v1.1.1) ==================== */
+// Executable form of the manifest's promise: any crop can be re-derived exactly from its source
+// photograph and its four recorded corners. Used to regenerate the dataset of the methods paper
+// with the release renderer.
+const RD={src:null,idx:null,rows:[],out:null};
+function parseCSVLine(l){const o=[];let cur='',q=false;for(let i=0;i<l.length;i++){const ch=l[i];if(q){if(ch==='"'){if(l[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=ch;}else{if(ch==='"')q=true;else if(ch===','){o.push(cur);cur='';}else cur+=ch;}}o.push(cur);return o;}
+function manifestRowsFromText(name,txt){
+  const rows=[];
+  if(/\.json$/i.test(name)){
+    let j;try{j=JSON.parse(txt);}catch(e){return rows;}
+    const items=j.items||j;
+    for(const [k,m] of Object.entries(items)){if(!m||!m.corners)continue;
+      rows.push({outName:m.outName||k,natW:+m.natW,natH:+m.natH,size:+m.size||2000,corners:m.corners.map(p=>[+p[0],+p[1]]),src:m.src||'',exp:m.exp||'',plate:m.plate||'',tt:m.tt||'',date:m.date||'',seq:m.seq||'',manifest:name});}
+    return rows;
+  }
+  const lines=txt.split(/\r?\n/).filter(l=>l.trim());if(lines.length<2)return rows;
+  const h=parseCSVLine(lines[0]).map(x=>x.trim());const H={};h.forEach((c,i)=>H[c]=i);
+  const g=(a,k)=>H[k]!==undefined?a[H[k]]:'';
+  for(let i=1;i<lines.length;i++){const a=parseCSVLine(lines[i]);if(a.length<h.length-1)continue;
+    const on=g(a,'out_name')||g(a,'Name');if(!on)continue;
+    const c=[];for(let k=0;k<4;k++)c.push([+g(a,'x'+k),+g(a,'y'+k)]);
+    if(c.some(p=>!isFinite(p[0])||!isFinite(p[1])))continue;
+    rows.push({outName:on,natW:+g(a,'natW'),natH:+g(a,'natH'),size:+g(a,'out_size')||2000,corners:c,src:g(a,'src')||'',exp:g(a,'exp'),plate:g(a,'plate'),tt:g(a,'treatment')||g(a,'tt'),date:g(a,'date'),seq:g(a,'seq'),manifest:name});}
+  return rows;
+}
+async function indexDir(dir,map,depth=0){
+  if(depth>12)return;
+  for await(const [n,h] of dir.entries()){
+    if(h.kind==='file'){if(/\.(jpe?g|png)$/i.test(n)){if(!map.has(n))map.set(n,[]);map.get(n).push(h);}}
+    else if(h.kind==='directory'){await indexDir(h,map,depth+1);}
+  }
+}
+function rdFind(row){
+  const m=RD.idx;if(!m)return null;
+  const cands=[row.outName,row.outName.replace(/\.[^.]+$/,'.jpg'),row.src].filter(Boolean);
+  for(const c of cands){if(m.has(c))return {name:c,handles:m.get(c)};}
+  // suffix match (e.g. "26_07_11_Placa23_...JPG")
+  for(const [k,v] of m){if(k.endsWith(row.outName))return {name:k,handles:v};}
+  return null;
+}
+// Render audit: |row-gradient| on the 26x26 mesh lines of the OLD renderer vs elsewhere (should be ~1.0
+// for a seam-free renderer) and the dominant period of the row-gradient profile.
+function renderAudit(canvas,mesh=26){
+  const n=canvas.width;const g=canvas.getContext('2d').getImageData(0,0,n,n).data;
+  const prof=new Float64Array(n-1);
+  for(let y=0;y<n-1;y++){let s=0;for(let x=0;x<n;x++){const i=(y*n+x)*4,j=((y+1)*n+x)*4;
+    const a=0.299*g[i]+0.587*g[i+1]+0.114*g[i+2],b=0.299*g[j]+0.587*g[j+1]+0.114*g[j+2];s+=Math.abs(a-b);}prof[y]=s/n;}
+  const on=new Uint8Array(n-1);for(let j=1;j<mesh;j++){const c=Math.round(j*n/mesh);for(let y=Math.max(c-1,0);y<=c&&y<n-1;y++)on[y]=1;}
+  let so=0,no=0,sf=0,nf=0;for(let y=0;y<n-1;y++){if(on[y]){so+=prof[y];no++;}else{sf+=prof[y];nf++;}}
+  return {seamRatio:(so/no)/(sf/nf),gradOn:so/no,gradOff:sf/nf};
+}
+async function rederiveRun(rows,resolver,outDirH,plateCm,log){
+  const done={};const outRows=[];const logRows=[['out_name','manifest','status','source_file','source_w','source_h','scale_x','scale_y']];
+  const audit=[['out_name','seam_ratio_mesh26','grad_on','grad_off']];
+  const jstr={tool:'PlatePrep v1.1.1 (re-derive)',generated:new Date().toISOString(),items:{}};
+  let ok=0,miss=0,i=0;
+  for(const r of rows){
+    i++;if(done[r.outName]){logRows.push([r.outName,r.manifest,'duplicate-skipped','','','','','']);continue;}
+    const f=await resolver(r);
+    if(!f){miss++;logRows.push([r.outName,r.manifest,'missing-source','','','','','']);log(`${i}/${rows.length}  ✗ ${r.outName} — ${t('rdMissing')}`);continue;}
+    let bm;try{bm=await readBitmap({file:f.file,name:f.name});}catch(e){logRows.push([r.outName,r.manifest,'decode-error:'+(e&&e.message||e),f.name,'','','','']);continue;}
+    const bw=bm.width,bh=bm.height;const fd=lastFileDims;const sx=bw/(r.natW||bw),sy=bh/(r.natH||bh);
+    const o=orderPts(r.corners.map(p=>[p[0]*sx,p[1]*sy]));
+    const prevBitmap=bitmap;bitmap=bm;imgW=bm.width;imgH=bm.height;
+    const cv=document.createElement('canvas');warpTo(cv,r.size,o);
+    const a=renderAudit(cv);
+    const pxPerCm=r.size/plateCm;
+    const blob=await stampJpegScale(await new Promise(res=>cv.toBlob(res,'image/jpeg',0.95)),pxPerCm);
+    const fh=await outDirH.getFileHandle(r.outName,{create:true});const w=await fh.createWritable();await w.write(blob);await w.close();
+    bitmap=prevBitmap;if(bm.close)try{bm.close();}catch(e){}
+    const c4=o.map(p=>[+p[0].toFixed(2),+p[1].toFixed(2)]);
+    outRows.push([r.outName,r.outName,r.exp,r.plate,r.tt,r.date,r.seq,bw,bh,fd?fd.w:bw,fd?fd.h:bh,r.size,plateCm,+pxPerCm.toFixed(3),...c4.flat(),f.name,r.natW,r.natH,+sx.toFixed(4)]);
+    jstr.items[r.outName]={outName:r.outName,corners:c4,natW:bw,natH:bh,fileW:fd?fd.w:bw,fileH:fd?fd.h:bh,size:r.size,plateCm,pxPerCm:+pxPerCm.toFixed(3),exp:r.exp,plate:r.plate,tt:r.tt,date:r.date,seq:r.seq,src:f.name,rederivedFrom:{manifest:r.manifest,natW:r.natW,natH:r.natH,scale:[+sx.toFixed(4),+sy.toFixed(4)]}};
+    audit.push([r.outName,a.seamRatio.toFixed(3),a.gradOn.toFixed(3),a.gradOff.toFixed(3)]);
+    logRows.push([r.outName,r.manifest,'ok',f.name,bw,bh,sx.toFixed(4),sy.toFixed(4)]);
+    done[r.outName]=true;ok++;
+    if(ok%10===0||i===rows.length)log(`${i}/${rows.length}  ✓ ${ok} ok, ${miss} ${t('rdMissing')}`);
+    await new Promise(res=>setTimeout(res,0));
+  }
+  const hdr=['Name','out_name','exp','plate','treatment','date','seq','natW','natH','file_w','file_h','out_size','plate_cm','px_per_cm','x0','y0','x1','y1','x2','y2','x3','y3','src','rederived_from_natW','rederived_from_natH','rederive_scale'];
+  const csv=[hdr,...outRows].map(r=>r.join(',')).join('\n');
+  jstr.count=ok;
+  await writeText(outDirH,'crop_manifest.csv',csv);
+  await writeText(outDirH,'crop_manifest.json',JSON.stringify(jstr,null,1));
+  await writeText(outDirH,'rederive_log.csv',logRows.map(r=>r.join(',')).join('\n'));
+  await writeText(outDirH,'render_audit.csv',audit.map(r=>r.join(',')).join('\n'));
+  const ijm=['// PlatePrep v1.1.1 — ImageJ/Fiji spatial calibration for the re-derived crops in this folder.',
+    'if (nImages==0) { p = File.openDialog("Open a PlatePrep crop"); open(p); }',
+    'run("Set Scale...", "distance='+(rows[0]?rows[0].size:2000)+' known='+plateCm+' unit=cm global");'].join('\n')+'\n';
+  await writeText(outDirH,'PlatePrep_ImageJ_scale.ijm',ijm);
+  return {ok,miss,total:rows.length};
+}
+(function(){
+  const M=document.getElementById('rdModal'),L=document.getElementById('rdLog');
+  const log=m=>{L.textContent+=m+'\n';L.scrollTop=L.scrollHeight;};
+  const upd=()=>{document.getElementById('rdRun').disabled=!(RD.idx&&RD.rows.length&&RD.out);};
+  document.getElementById('lnkRederive').onclick=e=>{e.preventDefault();if(!hasFS){alert(t('rdNoFS'));return;}M.style.display='flex';};
+  document.getElementById('rdClose').onclick=()=>{M.style.display='none';};
+  document.getElementById('rdPickSrc').onclick=async()=>{try{RD.src=await window.showDirectoryPicker({id:'plateprep-rd-src',mode:'read'});}catch(e){return;}
+    document.getElementById('rdSrcInfo').textContent='…';RD.idx=new Map();await indexDir(RD.src,RD.idx);
+    document.getElementById('rdSrcInfo').textContent=RD.src.name+' — '+RD.idx.size+' img';upd();};
+  document.getElementById('rdPickMan').onclick=async()=>{let hs;try{hs=await window.showOpenFilePicker({id:'plateprep-rd-man',multiple:true,types:[{description:'Manifest',accept:{'text/csv':['.csv'],'application/json':['.json']}}]});}catch(e){return;}
+    RD.rows=[];for(const h of hs){const f=await h.getFile();RD.rows.push(...manifestRowsFromText(f.name,await f.text()));}
+    document.getElementById('rdManInfo').textContent=hs.length+' file(s), '+RD.rows.length+' rows';upd();};
+  document.getElementById('rdPickOut').onclick=async()=>{try{RD.out=await window.showDirectoryPicker({id:'plateprep-rd-out',mode:'readwrite'});}catch(e){return;}
+    document.getElementById('rdOutInfo').textContent=RD.out.name;upd();};
+  document.getElementById('rdRun').onclick=async()=>{
+    const btn=document.getElementById('rdRun');btn.disabled=true;L.textContent='';
+    const plateCm=parseFloat(document.getElementById('rdPlateCm').value)||10;
+    const resolver=async r=>{const f=rdFind(r);if(!f)return null;const file=await f.handles[0].getFile();return {name:f.name,file};};
+    try{const res=await rederiveRun(RD.rows,resolver,RD.out,plateCm,log);log(t('rdDone')+': '+res.ok+' ok / '+res.miss+' '+t('rdMissing')+' / '+res.total);}
+    catch(e){log('ERRO: '+(e&&e.message||e));console.error(e);}
+    btn.disabled=false;
+  };
+})();
+
 document.getElementById('btnSave').onclick=saveNext;
 document.getElementById('btnSkip').onclick=skip;
 document.getElementById('btnPrevImg').onclick=goPrev;
@@ -1645,7 +1802,7 @@ setLang(initLang);
 showScreen('welcome');
 
 /* gancho de teste (injeção de arquivos sem pickers) — inofensivo em produção */
-window.__pp={stampJpegScale,jfifDensity,inject:async function(list,mockOut){files=list.map((f,i)=>({...f,i}));if(mockOut)outDir=mockOut;await afterFolders();},
+window.__pp={stampJpegScale,jfifDensity,rederiveRun,manifestRowsFromText,renderAudit,inject:async function(list,mockOut){files=list.map((f,i)=>({...f,i}));if(mockOut)outDir=mockOut;await afterFolders();},
   get files(){return files;},get manifest(){return manifest;},get savedOrder(){return savedOrder;},
   get cortes(){return cortes;},set cortes(v){cortes=v;},triRender,applyTriage,gotoSelect,startCrop,saveNext,writeAll,
   get pts(){return pts;},set pts(v){pts=v;},updateHint,updatePreview,draw,get csv(){return __lastCSV;}};

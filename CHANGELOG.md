@@ -3,6 +3,16 @@
 All notable changes to PlatePrep are documented here. Versions follow the build tag shown in the
 application header.
 
+## [1.1.1] — 2026-08-16
+- **Re-derive crops from a manifest** (link on the welcome screen). Given a folder of source
+  photographs, one or more manifests (`crop_manifest.csv/.json`, or the older
+  `manifesto_recortes.*`) and an output folder, PlatePrep re-produces every crop from its recorded
+  four corners with the current renderer — rescaling the corners exactly if the photograph is now
+  read at a different resolution — and writes a new manifest in native coordinates,
+  `rederive_log.csv` (source found / missing per crop) and `render_audit.csv` (mesh-line gradient
+  ratio per crop). This is the executable form of the manifest's reproducibility promise, and it
+  is how the dataset of the methods paper was regenerated with the release renderer.
+
 ## [1.1.0] — 2026-08-16
 - **Native-resolution decoding.** Up to v1.0.5 photographs wider than 3600 px were decoded at
   3600 px (`MAX_DECODE_W`, a memory economy inherited from the prototype), so 27-MP GoPro frames
