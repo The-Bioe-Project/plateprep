@@ -3,6 +3,12 @@
 All notable changes to PlatePrep are documented here. Versions follow the build tag shown in the
 application header.
 
+## [1.1.2] — 2026-08-16
+- Re-derive mode now **skips and flags** a crop when the source photograph's aspect ratio no longer
+  matches the frame its manifest was recorded in (an EXIF-orientation drift a single scale factor
+  cannot undo) instead of writing a distorted crop. Flagged rows appear in `rederive_log.csv` as
+  `orientation-mismatch-skipped`.
+
 ## [1.1.1] — 2026-08-16
 - **Re-derive crops from a manifest** (link on the welcome screen). Given a folder of source
   photographs, one or more manifests (`crop_manifest.csv/.json`, or the older
