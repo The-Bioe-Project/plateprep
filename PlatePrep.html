@@ -163,7 +163,7 @@
     </div>
   </div>
   <span class="pill" id="counter">—</span>
-  <span class="pill" id="ver" title="build">v1.0.5 · 2026-08-16</span>
+  <span class="pill" id="ver" title="build">v1.1.0 · 2026-08-16</span>
   <span class="sp"></span>
   <span class="lab" id="outSizeWrap" style="display:none"><span data-i18n="outRes"></span>
     <select id="sizeSel" style="margin-left:5px">
@@ -638,7 +638,7 @@ let cortes=new Set([0]);         // triagem
 let triageUsed=false;
 let curScreen='welcome';
 let idx=0,done={},manifest={},savedOrder=[],modalOpen=false,skipCount=0;
-let curCamera='',cameraByOut={},photogByOut={},notesByOut={},heightByOut={};
+let curCamera='',curFileDims=null,cameraByOut={},photogByOut={},notesByOut={},heightByOut={};
 let bitmap=null,imgW=0,imgH=0,pts=[],active=-1;
 let view={s:1,tx:0,ty:0},mouse={x:0,y:0,inside:false};
 let gpLocked=null;
@@ -889,7 +889,27 @@ function parseExifTiff(dv,base,end){
   }catch(e){}
   return res;
 }
-const MAX_DECODE_W=3600;
+// v1.1.0: photographs are decoded at NATIVE resolution. Up to v1.0.5 MAX_DECODE_W was 3600 px, which
+// silently downsampled e.g. 5568-px GoPro frames to 3600 px (linear factor 0.65) before cropping —
+// the "source-resolution discrepancy" reported in the methods paper. The cap now only guards
+// against pathological inputs (>12000 px wide); the file's own JPEG dimensions are recorded in the
+// manifest (file_w/file_h) next to the working-canvas dimensions so any downsampling is visible.
+const MAX_DECODE_W=12000;
+function jpegDims(dv){
+  try{
+    if(dv.getUint16(0)!==0xFFD8)return null;
+    let o=2,len=dv.byteLength;
+    while(o<len-8){
+      if(dv.getUint8(o)!==0xFF){o++;continue;}
+      const mk=dv.getUint8(o+1);
+      if((mk>=0xC0&&mk<=0xC3)||(mk>=0xC5&&mk<=0xC7)||(mk>=0xC9&&mk<=0xCB)||(mk>=0xCD&&mk<=0xCF))
+        return {w:dv.getUint16(o+7),h:dv.getUint16(o+5)};
+      if(mk===0xD8||mk===0xD9||(mk>=0xD0&&mk<=0xD7)){o+=2;continue;}
+      o+=2+dv.getUint16(o+2);
+    }
+  }catch(e){}
+  return null;
+}
 function jpegWidth(dv){
   try{
     if(dv.getUint16(0)!==0xFFD8)return null;
@@ -905,14 +925,14 @@ function jpegWidth(dv){
   }catch(e){}
   return null;
 }
-let lastExif={};
+let lastExif={},lastFileDims=null;
 async function readBitmap(fileObj){
   const file=await fileOf(fileObj);
-  const opts={imageOrientation:'from-image'};lastExif={};
+  const opts={imageOrientation:'from-image'};lastExif={};lastFileDims=null;
   try{
     const buf=await file.slice(0,262144).arrayBuffer();const dv=new DataView(buf);
-    const w=jpegWidth(dv);
-    if(w && w>MAX_DECODE_W){opts.resizeWidth=MAX_DECODE_W;opts.resizeQuality='high';}
+    const d=jpegDims(dv);lastFileDims=d;
+    if(d && d.w>MAX_DECODE_W){opts.resizeWidth=MAX_DECODE_W;opts.resizeQuality='high';console.warn('PlatePrep: decoding',d.w,'px wide file at',MAX_DECODE_W,'px');}
     lastExif=readExif(dv);
   }catch(e){}
   try{return await createImageBitmap(file,opts);}
@@ -1239,32 +1259,67 @@ async function stampJpegScale(blob,pxPerCm){
     return new Blob([out],{type:'image/jpeg'});
   }catch(e){console.warn('JFIF density stamp skipped:',e);return blob;}
 }
+// ---- Rectification: exact per-pixel homography with bilinear sampling (v1.1.0) ----
+// Up to v1.0.5 the plate was resampled through a 26x26 piecewise-affine triangle mesh drawn with
+// canvas clip+drawImage. That left faint periodic seams at the mesh pitch (2000/26 = 76.9 px),
+// harmless for point counts but visible to texture analyses (see the methods paper, Section 3.4).
+// Now every output pixel is mapped through the exact homography into the source and sampled
+// bilinearly (2x2 supersampled when the source is denser than the output grid). Only the
+// bounding box of the clicked quadrilateral is read from the source bitmap.
+// Source-pixel cache: the live 300-px preview redraws on every pan/zoom, so the bounding-box
+// read of the source bitmap is cached and reused while it still covers the requested region.
+let _srcCache=null;
+function srcPixels(bx,by,bw,bh){
+  const c=_srcCache;
+  if(c&&c.bitmap===bitmap&&bx>=c.bx&&by>=c.by&&bx+bw<=c.bx+c.bw&&by+bh<=c.by+c.bh){
+    if(bx===c.bx&&by===c.by&&bw===c.bw&&bh===c.bh)return c.data;
+    // sub-window copy
+    const out=new Uint8ClampedArray(bw*bh*4);
+    for(let y=0;y<bh;y++){const so=((by-c.by+y)*c.bw+(bx-c.bx))*4;out.set(c.data.subarray(so,so+bw*4),y*bw*4);}
+    return out;
+  }
+  const off=document.createElement('canvas');off.width=bw;off.height=bh;
+  const oc=off.getContext('2d',{willReadFrequently:true});
+  oc.drawImage(bitmap,bx,by,bw,bh,0,0,bw,bh);
+  const data=oc.getImageData(0,0,bw,bh).data;
+  _srcCache={bitmap,bx,by,bw,bh,data};
+  return data;
+}
 function warpTo(canvas,sz,orderedSrc){
   canvas.width=sz;canvas.height=sz;const c=canvas.getContext('2d');
-  c.clearRect(0,0,sz,sz);
   const dst=[[0,0],[sz,0],[sz,sz],[0,sz]];
   const M=solveH(dst,orderedSrc);
-  const N=26;
-  const g=[];for(let j=0;j<=N;j++){g[j]=[];for(let i=0;i<=N;i++){const dx=i/N*sz,dy=j/N*sz;g[j][i]=applyH(M,dx,dy);}}
-  for(let j=0;j<N;j++)for(let i=0;i<N;i++){
-    const d00=[i/N*sz,j/N*sz],d10=[(i+1)/N*sz,j/N*sz],d11=[(i+1)/N*sz,(j+1)/N*sz],d01=[i/N*sz,(j+1)/N*sz];
-    drawTri(c,g[j][i],g[j][i+1],g[j+1][i+1],d00,d10,d11);
-    drawTri(c,g[j][i],g[j+1][i+1],g[j+1][i],d00,d11,d01);
+  const xs=orderedSrc.map(p=>p[0]),ys=orderedSrc.map(p=>p[1]);
+  const bx=Math.max(0,Math.floor(Math.min(...xs))-2),by=Math.max(0,Math.floor(Math.min(...ys))-2);
+  const bx1=Math.min(bitmap.width,Math.ceil(Math.max(...xs))+2),by1=Math.min(bitmap.height,Math.ceil(Math.max(...ys))+2);
+  const bw=Math.max(1,bx1-bx),bh=Math.max(1,by1-by);
+  const src=srcPixels(bx,by,bw,bh);
+  const out=c.createImageData(sz,sz),o=out.data;
+  // mean source pixels per output pixel (linear) -> supersample when downsampling
+  const area=Math.abs((xs[0]*ys[1]-xs[1]*ys[0])+(xs[1]*ys[2]-xs[2]*ys[1])+(xs[2]*ys[3]-xs[3]*ys[2])+(xs[3]*ys[0]-xs[0]*ys[3]))/2;
+  const ss=(Math.sqrt(area)/sz>1.15)?2:1,inv=1/(ss*ss);
+  const h00=M[0][0],h01=M[0][1],h02=M[0][2],h10=M[1][0],h11=M[1][1],h12=M[1][2],h20=M[2][0],h21=M[2][1],h22=M[2][2];
+  const W1=bw-1,H1=bh-1;
+  for(let y=0;y<sz;y++){
+    for(let x=0;x<sz;x++){
+      let r=0,g=0,b=0;
+      for(let sy=0;sy<ss;sy++)for(let sx=0;sx<ss;sx++){
+        const dx=x+(sx+0.5)/ss,dy=y+(sy+0.5)/ss;
+        const d=h20*dx+h21*dy+h22;
+        // source coords of this output sample; -0.5 converts to pixel-centre convention, then bbox offset
+        let u=(h00*dx+h01*dy+h02)/d-0.5-bx,v=(h10*dx+h11*dy+h12)/d-0.5-by;
+        if(u<0)u=0;else if(u>W1)u=W1;if(v<0)v=0;else if(v>H1)v=H1;
+        const u0=u|0,v0=v|0,u1=u0<W1?u0+1:u0,v1=v0<H1?v0+1:v0,fu=u-u0,fv=v-v0;
+        const i00=(v0*bw+u0)*4,i10=(v0*bw+u1)*4,i01=(v1*bw+u0)*4,i11=(v1*bw+u1)*4;
+        const w00=(1-fu)*(1-fv),w10=fu*(1-fv),w01=(1-fu)*fv,w11=fu*fv;
+        r+=src[i00]*w00+src[i10]*w10+src[i01]*w01+src[i11]*w11;
+        g+=src[i00+1]*w00+src[i10+1]*w10+src[i01+1]*w01+src[i11+1]*w11;
+        b+=src[i00+2]*w00+src[i10+2]*w10+src[i01+2]*w01+src[i11+2]*w11;
+      }
+      const k=(y*sz+x)*4;o[k]=r*inv+0.5;o[k+1]=g*inv+0.5;o[k+2]=b*inv+0.5;o[k+3]=255;
+    }
   }
-}
-function drawTri(c,s0,s1,s2,d0,d1,d2){
-  c.save();
-  c.beginPath();c.moveTo(d0[0],d0[1]);c.lineTo(d1[0],d1[1]);c.lineTo(d2[0],d2[1]);c.closePath();c.clip();
-  const den=(s1[0]-s0[0])*(s2[1]-s0[1])-(s2[0]-s0[0])*(s1[1]-s0[1])||1e-9;
-  const a=((d1[0]-d0[0])*(s2[1]-s0[1])-(d2[0]-d0[0])*(s1[1]-s0[1]))/den;
-  const bb=((d2[0]-d0[0])*(s1[0]-s0[0])-(d1[0]-d0[0])*(s2[0]-s0[0]))/den;
-  const cc=((d1[1]-d0[1])*(s2[1]-s0[1])-(d2[1]-d0[1])*(s1[1]-s0[1]))/den;
-  const dd=((d2[1]-d0[1])*(s1[0]-s0[0])-(d1[1]-d0[1])*(s2[0]-s0[0]))/den;
-  const e=d0[0]-a*s0[0]-bb*s0[1];const f=d0[1]-cc*s0[0]-dd*s0[1];
-  c.setTransform(a,cc,bb,dd,e,f);
-  c.drawImage(bitmap,0,0);
-  c.restore();
-  c.setTransform(1,0,0,1,0,0);
+  c.putImageData(out,0,0);
 }
 function offsets(){const fw=imgW*view.s,fh=imgH*view.s,vw=scroller.clientWidth,vh=scroller.clientHeight;
   return [fw<=vw?(vw-fw)/2:-scroller.scrollLeft, fh<=vh?(vh-fh)/2:-scroller.scrollTop];}
@@ -1401,7 +1456,7 @@ async function loadCurrent(){
   if(myTok!==loadToken){if(bmp&&bmp.close)try{bmp.close();}catch(e){}return;}
   bitmap=bmp;imgW=bitmap.width;imgH=bitmap.height;
   centerView();resetPts();draw();updateCounter();
-  curCamera=(lastExif&&lastExif.camera)||'';
+  curCamera=(lastExif&&lastExif.camera)||'';curFileDims=lastFileDims;
   cm.textContent+=' · '+(curCamera?(t('camExif')+curCamera):t('camNoExif'));
   document.getElementById('stat').textContent='';
 }
@@ -1458,7 +1513,8 @@ async function saveNext(){
     photogByOut[outName]=cfgVal('cfgPhotog');
     notesByOut[outName]=document.getElementById('gpNotes').value.trim();
     heightByOut[outName]=plateSizeCm();
-    manifest[outName]={outName,corners:o.map(p=>[Math.round(p[0]),Math.round(p[1])]),natW:imgW,natH:imgH,size:sz,
+    manifest[outName]={outName,corners:o.map(p=>[Math.round(p[0]),Math.round(p[1])]),natW:imgW,natH:imgH,
+      fileW:curFileDims?curFileDims.w:'',fileH:curFileDims?curFileDims.h:'',size:sz,
       plateCm:plateSizeCm(),pxPerCm:+pxPerCm.toFixed(3),
       exp:info?info.exp:'',plate:info?info.plate:'',tt:info?info.tt:'',date:info?info.date:'',seq:info?info.seq:'',src:f.name};
     updateCounter();
@@ -1513,7 +1569,7 @@ function imagejMacro(){
   const items=Object.values(manifest);if(!items.length)return '';
   const sz=items[0].size,cm=items[0].plateCm||plateSizeCm();const ppc=sz/cm;
   const mixed=items.some(m=>m.size!==sz||(m.plateCm||cm)!==cm);
-  return ['// PlatePrep v1.0.5 — ImageJ/Fiji spatial calibration for the crops in this folder.',
+  return ['// PlatePrep v1.1.0 — ImageJ/Fiji spatial calibration for the crops in this folder.',
    '// Every crop is the plate: '+sz+' px = '+cm+' cm  ->  '+(+ppc.toFixed(3))+' px/cm.',
    '// The same density is embedded in each JPG (JFIF header) for tools that read it (Photoshop, GIMP, QGIS, Python/PIL...);',
    '// ImageJ ignores JFIF density, so run this macro once per session (Plugins > Macros > Run...) — the scale is set as Global.',
@@ -1523,13 +1579,13 @@ function imagejMacro(){
    'print("PlatePrep: scale set to '+(+ppc.toFixed(3))+' px/cm (global) — '+sz+' px = '+cm+' cm");'].filter(l=>l!==null).join('\n')+'\n';
 }
 async function writeAll(){
-  const rows=[['Name','out_name','exp','plate','treatment','date','seq','natW','natH','out_size','plate_cm','px_per_cm','x0','y0','x1','y1','x2','y2','x3','y3']];
+  const rows=[['Name','out_name','exp','plate','treatment','date','seq','natW','natH','file_w','file_h','out_size','plate_cm','px_per_cm','x0','y0','x1','y1','x2','y2','x3','y3']];
   for(const [name,m] of Object.entries(manifest)){
-    rows.push([name,m.outName,m.exp,m.plate,m.tt,m.date,m.seq,m.natW,m.natH,m.size,m.plateCm??'',m.pxPerCm??'',...m.corners.flat()]);
+    rows.push([name,m.outName,m.exp,m.plate,m.tt,m.date,m.seq,m.natW,m.natH,m.fileW??'',m.fileH??'',m.size,m.plateCm??'',m.pxPerCm??'',...m.corners.flat()]);
   }
   const csv=rows.map(r=>r.join(',')).join('\n');
   const ijm=imagejMacro();
-  const jstr=JSON.stringify({tool:'PlatePrep v1.0.5',generated:new Date().toISOString(),count:Object.keys(manifest).length,items:manifest},null,1);
+  const jstr=JSON.stringify({tool:'PlatePrep v1.1.0',generated:new Date().toISOString(),count:Object.keys(manifest).length,items:manifest},null,1);
   await writeMetaCSV();
   const tri=triageUsed?triageCSV():null;
   if(outDir){

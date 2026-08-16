@@ -3,6 +3,21 @@
 All notable changes to PlatePrep are documented here. Versions follow the build tag shown in the
 application header.
 
+## [1.1.0] — 2026-08-16
+- **Native-resolution decoding.** Up to v1.0.5 photographs wider than 3600 px were decoded at
+  3600 px (`MAX_DECODE_W`, a memory economy inherited from the prototype), so 27-MP GoPro frames
+  (5568 × 4872) were rectified from a 0.65× working canvas — the "source-resolution discrepancy"
+  reported in the methods paper (Section 3.3). Photographs are now decoded at full size (guard
+  raised to 12 000 px); the manifest records the source file's own pixel dimensions (`file_w`,
+  `file_h`) next to the working-canvas dimensions (`natW`, `natH`) so any downsampling is visible.
+- **Per-pixel exact-homography rendering.** The 26 × 26 piecewise-affine mesh (canvas
+  clip + drawImage) left faint periodic seams at the mesh pitch (paper, Section 3.4). Every output
+  pixel is now mapped through the exact homography and sampled bilinearly (2 × 2 supersampled when
+  the source is denser than the output grid), reading only the bounding box of the clicked
+  quadrilateral. Regression fixture: v1.1.0 crops agree with the independent reimplementation to
+  MAE ≤ 1.2/255, r ≥ 0.998, mesh-line gradient ratio 0.9–1.0× (no seam).
+- Source-pixel cache so the live 300-px preview stays fluid while panning/zooming.
+
 ## [1.0.5] — 2026-08-16
 - **Physical scale embedded in every crop.** The output density (px/cm = output size ÷ plate
   size, 200 px/cm by default) is written into the JPEG's JFIF header (APP0 density, dots/cm or
