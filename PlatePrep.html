@@ -482,8 +482,8 @@ pt:{
   btnStart:'Escolher pastas e começar',
   rdLink:'Re-derivar recortes a partir de um manifesto…',
   rdTitle:'Re-derivar recortes de um manifesto',
-  rdIntro:'Reproduz recortes já feitos: para cada linha do(s) manifesto(s) (crop_manifest.csv/.json ou manifesto_recortes.*), localiza a foto original pelo nome na pasta escolhida (busca recursiva), aplica os 4 cantos registrados (reescalados se a foto tiver outra resolução) e grava o recorte com a versão atual do programa. Saída: recortes + crop_manifest.csv/.json em coordenadas nativas + rederive_log.csv + render_audit.csv.',
-  rdPickSrc:'1 · Pasta das fotos originais',rdPickMan:'2 · Manifesto(s)',rdPickOut:'3 · Pasta de saída',
+  rdIntro:'Reproduz recortes já feitos (pode adicionar vários manifestos, um de cada pasta; nomes repetidos usam a primeira ocorrência): para cada linha do(s) manifesto(s) (crop_manifest.csv/.json ou manifesto_recortes.*), localiza a foto original pelo nome na pasta escolhida (busca recursiva), aplica os 4 cantos registrados (reescalados se a foto tiver outra resolução) e grava o recorte com a versão atual do programa. Saída: recortes + crop_manifest.csv/.json em coordenadas nativas + rederive_log.csv + render_audit.csv.',
+  rdPickSrc:'1 · Pasta das fotos originais',rdPickMan:'2 · Adicionar manifesto(s)',rdPickOut:'3 · Pasta de saída',
   rdPlate:'Lado da placa:',rdRun:'Iniciar',rdClose:'Fechar',
   rdNoFS:'Este modo requer a API File System Access (Chrome/Edge em HTTPS ou localhost).',
   rdDone:'Concluído',rdMissing:'sem foto-fonte',
@@ -573,8 +573,8 @@ en:{
   btnStart:'Choose folders and start',
   rdLink:'Re-derive crops from a manifest…',
   rdTitle:'Re-derive crops from a manifest',
-  rdIntro:'Reproduces crops made earlier: for each row of the manifest(s) (crop_manifest.csv/.json or manifesto_recortes.*), finds the source photograph by name in the chosen folder (recursive search), applies the recorded four corners (rescaled if the photograph has a different resolution) and writes the crop with the current version of the program. Output: crops + crop_manifest.csv/.json in native coordinates + rederive_log.csv + render_audit.csv.',
-  rdPickSrc:'1 · Source-photo folder',rdPickMan:'2 · Manifest(s)',rdPickOut:'3 · Output folder',
+  rdIntro:'Reproduces crops made earlier (several manifests can be added, one folder at a time; repeated names use the first occurrence): for each row of the manifest(s) (crop_manifest.csv/.json or manifesto_recortes.*), finds the source photograph by name in the chosen folder (recursive search), applies the recorded four corners (rescaled if the photograph has a different resolution) and writes the crop with the current version of the program. Output: crops + crop_manifest.csv/.json in native coordinates + rederive_log.csv + render_audit.csv.',
+  rdPickSrc:'1 · Source-photo folder',rdPickMan:'2 · Add manifest(s)',rdPickOut:'3 · Output folder',
   rdPlate:'Plate side:',rdRun:'Start',rdClose:'Close',
   rdNoFS:'This mode needs the File System Access API (Chrome/Edge over HTTPS or localhost).',
   rdDone:'Done',rdMissing:'no source photo',
@@ -1756,8 +1756,10 @@ async function rederiveRun(rows,resolver,outDirH,plateCm,log){
     document.getElementById('rdSrcInfo').textContent='…';RD.idx=new Map();await indexDir(RD.src,RD.idx);
     document.getElementById('rdSrcInfo').textContent=RD.src.name+' — '+RD.idx.size+' img';upd();};
   document.getElementById('rdPickMan').onclick=async()=>{let hs;try{hs=await window.showOpenFilePicker({id:'plateprep-rd-man',multiple:true,types:[{description:'Manifest',accept:{'text/csv':['.csv'],'application/json':['.json']}}]});}catch(e){return;}
-    RD.rows=[];for(const h of hs){const f=await h.getFile();RD.rows.push(...manifestRowsFromText(f.name,await f.text()));}
-    document.getElementById('rdManInfo').textContent=hs.length+' file(s), '+RD.rows.length+' rows';upd();};
+    RD.manNames=RD.manNames||[];
+    for(const h of hs){const f=await h.getFile();const rows=manifestRowsFromText(f.name,await f.text());const tag=f.name+' ('+rows.length+')';rows.forEach(r=>r.manifest=f.name+'#'+RD.manNames.length);RD.rows.push(...rows);RD.manNames.push(tag);}
+    document.getElementById('rdManInfo').innerHTML=RD.manNames.join(' + ')+' — '+RD.rows.length+' rows &nbsp;<a href="#" id="rdManClear">✕</a>';
+    document.getElementById('rdManClear').onclick=e=>{e.preventDefault();RD.rows=[];RD.manNames=[];document.getElementById('rdManInfo').textContent='—';upd();};upd();};
   document.getElementById('rdPickOut').onclick=async()=>{try{RD.out=await window.showDirectoryPicker({id:'plateprep-rd-out',mode:'readwrite'});}catch(e){return;}
     document.getElementById('rdOutInfo').textContent=RD.out.name;upd();};
   document.getElementById('rdRun').onclick=async()=>{
