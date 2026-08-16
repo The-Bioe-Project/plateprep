@@ -1,9 +1,9 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it using these metadata."
 title: "PlatePrep: browser-based preparation of settlement-plate imagery for annotation platforms"
-version: 1.0.4
-doi: 10.5281/zenodo.21959575
-date-released: 2026-08-15
+version: 1.0.5
+doi: 10.5281/zenodo.21959574
+date-released: 2026-08-16
 license: CC-BY-4.0
 type: software
 repository-code: "https://github.com/The-Bioe-Project/plateprep"
@@ -14,14 +14,15 @@ identifiers:
     description: "Concept DOI — resolves to the latest version"
   - type: doi
     value: 10.5281/zenodo.21959575
-    description: "Version DOI — v1.0.4"
+    description: "Version DOI — v1.0.4 (previous release)"
 abstract: >-
   Single-file, bilingual (English/Portuguese) browser application that prepares
   settlement-plate campaign photographs for annotation: campaign metadata from
   EXIF/GPS with optional weather retrieval, per-plate triage, four-corner homography
   cropping at fixed physical scale, and output of annotation-ready images, an
-  import-ready metadata table, a triage map and a crop manifest recording the four
-  source corners of every crop.
+  import-ready metadata table, a triage map, a crop manifest recording the four
+  source corners of every crop, and the physical scale embedded in every JPEG (JFIF
+  density) plus an ImageJ calibration macro.
 keywords:
   - benthic image analysis
   - biofouling

@@ -1,6 +1,6 @@
 <p align="center"><img src="docs/assets/banner.png" alt="PlatePrep — from field photographs to annotation-ready settlement-plate imagery" width="100%"></p>
 
-<p align="center"><a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-1.0.4-176578?style=flat-square&labelColor=0A2F3A" alt="Version"></a> <a href="LICENSE"><img src="https://img.shields.io/badge/license-CC%20BY%204.0-4E9346?style=flat-square&labelColor=0A2F3A" alt="License: CC BY 4.0"></a> <a href="https://www.projetobioe.com/plateprep.html"><img src="https://img.shields.io/badge/live%20app-projetobioe.com-1E7D91?style=flat-square&labelColor=0A2F3A" alt="Live app"></a> <a href="#"><img src="https://img.shields.io/badge/interface-EN%20%2F%20PT-84BFCC?style=flat-square&labelColor=0A2F3A" alt="Bilingual"></a> <a href="https://doi.org/10.5281/zenodo.21959574"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.21959574.svg" alt="DOI"></a> <a href="CITATION.cff"><img src="https://img.shields.io/badge/cite-CITATION.cff-DCEEF2?style=flat-square&labelColor=0A2F3A" alt="Cite"></a></p>
+<p align="center"><a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-1.0.5-176578?style=flat-square&labelColor=0A2F3A" alt="Version"></a> <a href="LICENSE"><img src="https://img.shields.io/badge/license-CC%20BY%204.0-4E9346?style=flat-square&labelColor=0A2F3A" alt="License: CC BY 4.0"></a> <a href="https://www.projetobioe.com/plateprep.html"><img src="https://img.shields.io/badge/live%20app-projetobioe.com-1E7D91?style=flat-square&labelColor=0A2F3A" alt="Live app"></a> <a href="#"><img src="https://img.shields.io/badge/interface-EN%20%2F%20PT-84BFCC?style=flat-square&labelColor=0A2F3A" alt="Bilingual"></a> <a href="https://doi.org/10.5281/zenodo.21959574"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.21959574.svg" alt="DOI"></a> <a href="CITATION.cff"><img src="https://img.shields.io/badge/cite-CITATION.cff-DCEEF2?style=flat-square&labelColor=0A2F3A" alt="Cite"></a></p>
 
 **From field photographs to annotation-ready settlement-plate imagery — in the browser.**
 
@@ -28,7 +28,7 @@ physical scale → named images + ready-to-import CSVs + a crop-geometry manifes
 | **2 · Triage** *(optional)* | The campaign photos in sequence with EXIF time; click the **first photo of each plate** and the program groups and numbers the rest. Can be skipped. |
 | **3 · Selection** | Thumbnail gallery; each photo shows its triage plate; check the ones to crop (already-cropped photos start unchecked). |
 | **4 · Crop** | Click the plate's 4 corners → homography rectification at **fixed scale** (image side = plate side). The plate is pre-filled from triage; treatment, file name and sequence are automatic. `Enter` saves and advances. |
-| **5 · Finish** | The output folder receives the crops (`Plate##_T?_EXP_YYYY_MM_DD_##.JPG`), **`metadata_coralnet.csv`** (import-ready), **`triage_mapping.csv`** and **`crop_manifest.csv/.json`** (the 4 corners of every crop). |
+| **5 · Finish** | The output folder receives the crops (`Plate##_T?_EXP_YYYY_MM_DD_##.JPG`, scale embedded in the JFIF header), **`metadata_coralnet.csv`** (import-ready), **`triage_mapping.csv`**, **`crop_manifest.csv/.json`** (the 4 corners of every crop) and **`PlatePrep_ImageJ_scale.ijm`** (ImageJ calibration macro). |
 
 ### The workflow, in pictures
 
@@ -59,15 +59,16 @@ single file statically over HTTPS — no build step, no backend.
 
 | File | Contents |
 |---|---|
-| `Plate##_T<letter>_<EXP>_<YYYY>_<MM>_<DD>_<seq>.JPG` | Square, perspective-corrected, fixed-scale crops (`Placa`/`Plate` prefix configurable). Self-describing, machine-parseable names. |
+| `Plate##_T<letter>_<EXP>_<YYYY>_<MM>_<DD>_<seq>.JPG` | Square, perspective-corrected, fixed-scale crops (`Placa`/`Plate` prefix configurable). Self-describing, machine-parseable names. **The physical scale (px/cm) is embedded in the JPEG's JFIF header** — nothing is drawn on the image; Photoshop, GIMP, QGIS, Python/PIL etc. open the crop already calibrated. |
 | `metadata_coralnet.csv` | One record per image with the columns CoralNet imports: `Name, Date, Experiment, Site, Treatment, Exposure_Days, Plate, Height (cm), Latitude, Longitude, Depth, Camera, Photographer, Water quality, Strobes, Framing gear used, White balance card, Comments`. `Exposure_Days` is computed from the deployment date; `Comments` carries the day's weather. |
 | `triage_mapping.csv` | Original photo → plate / treatment / sequence — a permanent record of the campaign photo log. |
-| `crop_manifest.csv` / `.json` | For every crop: the four source-image corner coordinates, source dimensions and output size. Re-derive any crop; quantify between-operator variability from the manifests alone. |
+| `crop_manifest.csv` / `.json` | For every crop: the four source-image corner coordinates, source dimensions, output size, plate size and px/cm. Re-derive any crop; quantify between-operator variability from the manifests alone. |
+| `PlatePrep_ImageJ_scale.ijm` | ImageJ/Fiji macro that sets the global spatial calibration of the campaign's crops (`Set Scale… distance=<px> known=<cm> unit=cm global`). ImageJ's built-in JPEG reader ignores JFIF density, so run this once per session (*Plugins › Macros › Run…*). |
 
 The plate → treatment map of the Bioē coating experiment (30 plates, treatments A–F) is built in
 as a template and fully editable — including the treatment legend — for any other experiment.
 
-## Known limitations (v1.0.4)
+## Known limitations (v1.0.5)
 
 - Assumes flat, approximately square plates with all four corners visible; corner marking is
   manual (automatic corner detection is on the roadmap).
@@ -83,7 +84,7 @@ as a template and fully editable — including the treatment legend — for any 
 
 If you use PlatePrep, please cite the archived software version:
 
-> Galembeck, E. & Schlosser, C. F. (2026). *PlatePrep: browser-based preparation of settlement-plate imagery for annotation platforms* (v1.0.4) [Software]. Zenodo. https://doi.org/10.5281/zenodo.21959575
+> Galembeck, E. & Schlosser, C. F. (2026). *PlatePrep: browser-based preparation of settlement-plate imagery for annotation platforms* (v1.0.5) [Software]. Zenodo. https://doi.org/10.5281/zenodo.21959574
 
 Concept DOI (always resolves to the latest version): https://doi.org/10.5281/zenodo.21959574 · Machine-readable
 metadata in [`CITATION.cff`](CITATION.cff) (GitHub's *Cite this repository* button). A methods paper

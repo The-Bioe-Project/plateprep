@@ -3,6 +3,17 @@
 All notable changes to PlatePrep are documented here. Versions follow the build tag shown in the
 application header.
 
+## [1.0.5] — 2026-08-16
+- **Physical scale embedded in every crop.** The output density (px/cm = output size ÷ plate
+  size, 200 px/cm by default) is written into the JPEG's JFIF header (APP0 density, dots/cm or
+  dpi, whichever rounds exactly), so tools that honour it (Photoshop, GIMP, QGIS, Python/PIL,
+  Bio-Formats…) open the crop already calibrated. Nothing is drawn on the image.
+- **ImageJ/Fiji companion macro** `PlatePrep_ImageJ_scale.ijm` written to the output folder
+  (ImageJ's built-in JPEG reader ignores JFIF density): one run sets the global scale
+  (`Set Scale… distance=<px> known=<cm> unit=cm global`).
+- `crop_manifest.csv/.json` gain `plate_cm` and `px_per_cm` per crop.
+- Finish screen lists the density and the macro.
+
 ## [1.0.4] — 2026-08-15
 - Weather source explicitly attributed to Open-Meteo (historical service, ERA5-based; marine
   service) in the interface, manuals and READMEs.

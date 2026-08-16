@@ -163,7 +163,7 @@
     </div>
   </div>
   <span class="pill" id="counter">—</span>
-  <span class="pill" id="ver" title="build">v1.0.4 · 2026-08-15</span>
+  <span class="pill" id="ver" title="build">v1.0.5 · 2026-08-16</span>
   <span class="sp"></span>
   <span class="lab" id="outSizeWrap" style="display:none"><span data-i18n="outRes"></span>
     <select id="sizeSel" style="margin-left:5px">
@@ -515,8 +515,8 @@ pt:{
   noImages:'Nenhuma imagem (JPG/PNG) encontrada na pasta de entrada.',
   readingExif:'Lendo EXIF…',photos:(n)=>`${n} fotos`,
   finTitle:'Finalizar',finIntro:'Resumo do que foi produzido nesta sessão:',
-  finRows:{cropped:'imagens recortadas',csv:'linhas no CSV de metadados',map:'fotos mapeadas na triagem',skipped:'fotos puladas'},
-  finNext:'Ao gravar, a pasta de saída recebe: os recortes (JPG), metadata_coralnet.csv (pronto para importar na plataforma), triage_mapping.csv (triagem) e crop_manifest.csv/.json (os 4 cantos de cada recorte — reprodutibilidade).',
+  finRows:{cropped:'imagens recortadas',csv:'linhas no CSV de metadados',map:'fotos mapeadas na triagem',skipped:'fotos puladas',ijm:'px/cm (escala no cabeçalho JFIF + macro ImageJ)'},
+  finNext:'Ao gravar, a pasta de saída recebe: os recortes (JPG), metadata_coralnet.csv (pronto para importar na plataforma), triage_mapping.csv (triagem) e crop_manifest.csv/.json (os 4 cantos de cada recorte — reprodutibilidade) e PlatePrep_ImageJ_scale.ijm (macro que calibra a escala no ImageJ/Fiji). Cada JPG leva a escala física (px/cm) no cabeçalho JFIF.',
   finBack:'◀ Voltar ao recorte',finWrite:'Gravar arquivos finais',
   finDone:'Arquivos gravados na pasta de saída. ✔',finZip:'Arquivo .zip baixado com todos os resultados. ✔',
   weatherNote:(a,c,w)=>{const b=[];if(a)b.push(`temp. do ar ${a} °C`);if(c)b.push(c);if(w)b.push(`temp. da água ~${w} °C`);return b.length?'Clima: '+b.join('; ')+'.':'';},
@@ -599,8 +599,8 @@ en:{
   noImages:'No images (JPG/PNG) found in the input folder.',
   readingExif:'Reading EXIF…',photos:(n)=>`${n} photos`,
   finTitle:'Finish',finIntro:'Summary of what this session produced:',
-  finRows:{cropped:'cropped images',csv:'rows in the metadata CSV',map:'photos mapped in triage',skipped:'photos skipped'},
-  finNext:'On write, the output folder receives: the crops (JPG), metadata_coralnet.csv (ready to import into the platform), triage_mapping.csv (triage) and crop_manifest.csv/.json (the 4 corners of each crop — reproducibility).',
+  finRows:{cropped:'cropped images',csv:'rows in the metadata CSV',map:'photos mapped in triage',skipped:'photos skipped',ijm:'px/cm (scale in JFIF header + ImageJ macro)'},
+  finNext:'On write, the output folder receives: the crops (JPG), metadata_coralnet.csv (ready to import into the platform), triage_mapping.csv (triage) and crop_manifest.csv/.json (the 4 corners of each crop — reproducibility) and PlatePrep_ImageJ_scale.ijm (macro that calibrates the scale in ImageJ/Fiji). Every JPG carries its physical scale (px/cm) in the JFIF header.',
   finBack:'◀ Back to cropping',finWrite:'Write final files',
   finDone:'Files written to the output folder. ✔',finZip:'.zip downloaded with all results. ✔',
   weatherNote:(a,c,w)=>{const b=[];if(a)b.push(`air temp. ${a} °C`);if(c)b.push(c);if(w)b.push(`water temp. ~${w} °C`);return b.length?'Weather: '+b.join('; ')+'.':'';},
@@ -1209,6 +1209,36 @@ function orderPts(p){
   let si=0,best=1e18;for(let i=0;i<4;i++){const d=s[i][0]+s[i][1];if(d<best){best=d;si=i;}}
   return[s[si],s[(si+1)%4],s[(si+2)%4],s[(si+3)%4]];
 }
+// ---- Physical scale embedded in the JPEG (JFIF APP0 density) — v1.0.5 ----
+// The output crop is the plate: sz px per plateSizeCm cm. We write that density into the JFIF
+// header so ImageJ/Fiji, Photoshop, QGIS etc. open the file already calibrated. Nothing is drawn
+// on the image. Units: 2 = dots/cm when px/cm is (near-)integer, else 1 = dots/inch (JFIF density
+// fields are uint16 integers; we pick the unit with the smaller rounding error).
+function jfifDensity(pxPerCm){
+  const dcm=Math.round(pxPerCm),din=Math.round(pxPerCm*2.54);
+  const ecm=Math.abs(dcm-pxPerCm)/pxPerCm,ein=Math.abs(din/2.54-pxPerCm)/pxPerCm;
+  return (ecm<=ein)?{units:2,x:dcm,y:dcm}:{units:1,x:din,y:din};
+}
+async function stampJpegScale(blob,pxPerCm){
+  try{
+    if(!(pxPerCm>0)||!isFinite(pxPerCm))return blob;
+    const {units,x,y}=jfifDensity(pxPerCm);
+    if(!(x>0&&x<65536))return blob;
+    const buf=new Uint8Array(await blob.arrayBuffer());
+    if(buf[0]!==0xFF||buf[1]!==0xD8)return blob;
+    // Existing APP0/JFIF right after SOI?
+    if(buf[2]===0xFF&&buf[3]===0xE0&&buf[6]===0x4A&&buf[7]===0x46&&buf[8]===0x49&&buf[9]===0x46&&buf[10]===0x00){
+      const o=11+2; // after 'JFIF\0' + version(2)
+      buf[o]=units;buf[o+1]=x>>8;buf[o+2]=x&255;buf[o+3]=y>>8;buf[o+4]=y&255;
+      return new Blob([buf],{type:'image/jpeg'});
+    }
+    // Otherwise insert a minimal APP0 JFIF segment (16 bytes payload, no thumbnail) after SOI.
+    const seg=new Uint8Array([0xFF,0xE0,0x00,0x10,0x4A,0x46,0x49,0x46,0x00,0x01,0x01,units,x>>8,x&255,y>>8,y&255,0,0]);
+    const out=new Uint8Array(buf.length+seg.length);
+    out.set(buf.subarray(0,2),0);out.set(seg,2);out.set(buf.subarray(2),2+seg.length);
+    return new Blob([out],{type:'image/jpeg'});
+  }catch(e){console.warn('JFIF density stamp skipped:',e);return blob;}
+}
 function warpTo(canvas,sz,orderedSrc){
   canvas.width=sz;canvas.height=sz;const c=canvas.getContext('2d');
   c.clearRect(0,0,sz,sz);
@@ -1419,7 +1449,8 @@ async function saveNext(){
       if(choice==='new')outName=nextFreeName(base);
     }
     const tmp=document.createElement('canvas');warpTo(tmp,sz,o);
-    const blob=await new Promise(r=>tmp.toBlob(r,'image/jpeg',0.95));
+    const pxPerCm=sz/plateSizeCm();
+    const blob=await stampJpegScale(await new Promise(r=>tmp.toBlob(r,'image/jpeg',0.95)),pxPerCm);
     if(outDir)await writeBlobTo(outName,blob);else if(zip)zip.file(outName,blob);
     const obase=outName.replace(/\.[^.]+$/,'');done[obase]=true;
     if(!savedOrder.includes(outName))savedOrder.push(outName);
@@ -1428,6 +1459,7 @@ async function saveNext(){
     notesByOut[outName]=document.getElementById('gpNotes').value.trim();
     heightByOut[outName]=plateSizeCm();
     manifest[outName]={outName,corners:o.map(p=>[Math.round(p[0]),Math.round(p[1])]),natW:imgW,natH:imgH,size:sz,
+      plateCm:plateSizeCm(),pxPerCm:+pxPerCm.toFixed(3),
       exp:info?info.exp:'',plate:info?info.plate:'',tt:info?info.tt:'',date:info?info.date:'',seq:info?info.seq:'',src:f.name};
     updateCounter();
     await writeMetaCSV();
@@ -1470,26 +1502,44 @@ function renderFinish(){
     [(namePrefix()==='Plate'?'Plate*.JPG':'Placa*.JPG'),Object.keys(manifest).length+' — '+I18N[LANG].finRows.cropped],
     ['triage_mapping.csv',(triageUsed?files.length:0)+' — '+I18N[LANG].finRows.map],
     ['crop_manifest.csv / .json',skipCount+' — '+I18N[LANG].finRows.skipped],
+    ['PlatePrep_ImageJ_scale.ijm',(+(S()/plateSizeCm()).toFixed(2))+' '+I18N[LANG].finRows.ijm],
   ];
   tb.innerHTML=rows.map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td></tr>').join('');
   document.getElementById('finStat').textContent='';
 }
+// ImageJ/Fiji companion macro: ImageJ's built-in JPEG reader ignores the JFIF density, so we also
+// write a one-line macro that sets the (global) scale of this campaign's crops.
+function imagejMacro(){
+  const items=Object.values(manifest);if(!items.length)return '';
+  const sz=items[0].size,cm=items[0].plateCm||plateSizeCm();const ppc=sz/cm;
+  const mixed=items.some(m=>m.size!==sz||(m.plateCm||cm)!==cm);
+  return ['// PlatePrep v1.0.5 — ImageJ/Fiji spatial calibration for the crops in this folder.',
+   '// Every crop is the plate: '+sz+' px = '+cm+' cm  ->  '+(+ppc.toFixed(3))+' px/cm.',
+   '// The same density is embedded in each JPG (JFIF header) for tools that read it (Photoshop, GIMP, QGIS, Python/PIL...);',
+   '// ImageJ ignores JFIF density, so run this macro once per session (Plugins > Macros > Run...) — the scale is set as Global.',
+   mixed?'// WARNING: crops in this folder have mixed output size / plate size — check crop_manifest.csv (out_size, plate_cm) per image.':'',
+   'if (nImages==0) { p = File.openDialog("Open a PlatePrep crop"); open(p); }',
+   'run("Set Scale...", "distance='+sz+' known='+cm+' unit=cm global");',
+   'print("PlatePrep: scale set to '+(+ppc.toFixed(3))+' px/cm (global) — '+sz+' px = '+cm+' cm");'].filter(l=>l!==null).join('\n')+'\n';
+}
 async function writeAll(){
-  const rows=[['Name','out_name','exp','plate','treatment','date','seq','natW','natH','out_size','x0','y0','x1','y1','x2','y2','x3','y3']];
+  const rows=[['Name','out_name','exp','plate','treatment','date','seq','natW','natH','out_size','plate_cm','px_per_cm','x0','y0','x1','y1','x2','y2','x3','y3']];
   for(const [name,m] of Object.entries(manifest)){
-    rows.push([name,m.outName,m.exp,m.plate,m.tt,m.date,m.seq,m.natW,m.natH,m.size,...m.corners.flat()]);
+    rows.push([name,m.outName,m.exp,m.plate,m.tt,m.date,m.seq,m.natW,m.natH,m.size,m.plateCm??'',m.pxPerCm??'',...m.corners.flat()]);
   }
   const csv=rows.map(r=>r.join(',')).join('\n');
-  const jstr=JSON.stringify({tool:'PlatePrep v1.0.4',generated:new Date().toISOString(),count:Object.keys(manifest).length,items:manifest},null,1);
+  const ijm=imagejMacro();
+  const jstr=JSON.stringify({tool:'PlatePrep v1.0.5',generated:new Date().toISOString(),count:Object.keys(manifest).length,items:manifest},null,1);
   await writeMetaCSV();
   const tri=triageUsed?triageCSV():null;
   if(outDir){
     await writeText(outDir,'crop_manifest.csv',csv);
     await writeText(outDir,'crop_manifest.json',jstr);
+    if(ijm)await writeText(outDir,'PlatePrep_ImageJ_scale.ijm',ijm);
     if(tri)await writeText(outDir,'triage_mapping.csv',tri);
     document.getElementById('finStat').textContent=t('finDone');
   }else if(zip){
-    zip.file('crop_manifest.csv',csv);zip.file('crop_manifest.json',jstr);
+    zip.file('crop_manifest.csv',csv);zip.file('crop_manifest.json',jstr);if(ijm)zip.file('PlatePrep_ImageJ_scale.ijm',ijm);
     zip.file('metadata_coralnet.csv',__lastCSV);
     if(tri)zip.file('triage_mapping.csv',tri);
     const content=await zip.generateAsync({type:'blob'});
@@ -1539,7 +1589,7 @@ setLang(initLang);
 showScreen('welcome');
 
 /* gancho de teste (injeção de arquivos sem pickers) — inofensivo em produção */
-window.__pp={inject:async function(list,mockOut){files=list.map((f,i)=>({...f,i}));if(mockOut)outDir=mockOut;await afterFolders();},
+window.__pp={stampJpegScale,jfifDensity,inject:async function(list,mockOut){files=list.map((f,i)=>({...f,i}));if(mockOut)outDir=mockOut;await afterFolders();},
   get files(){return files;},get manifest(){return manifest;},get savedOrder(){return savedOrder;},
   get cortes(){return cortes;},set cortes(v){cortes=v;},triRender,applyTriage,gotoSelect,startCrop,saveNext,writeAll,
   get pts(){return pts;},set pts(v){pts=v;},updateHint,updatePreview,draw,get csv(){return __lastCSV;}};
