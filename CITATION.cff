@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it using these metadata."
 title: "PlatePrep: browser-based preparation of settlement-plate imagery for annotation platforms"
-version: 1.1.0
+version: 1.1.2
 doi: 10.5281/zenodo.21960101
 date-released: 2026-08-16
 license: CC-BY-4.0

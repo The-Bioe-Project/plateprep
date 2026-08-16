@@ -1,6 +1,6 @@
 <p align="center"><img src="docs/assets/banner.png" alt="PlatePrep — from field photographs to annotation-ready settlement-plate imagery" width="100%"></p>
 
-<p align="center"><a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-1.1.0-176578?style=flat-square&labelColor=0A2F3A" alt="Version"></a> <a href="LICENSE"><img src="https://img.shields.io/badge/license-CC%20BY%204.0-4E9346?style=flat-square&labelColor=0A2F3A" alt="License: CC BY 4.0"></a> <a href="https://www.projetobioe.com/plateprep.html"><img src="https://img.shields.io/badge/live%20app-projetobioe.com-1E7D91?style=flat-square&labelColor=0A2F3A" alt="Live app"></a> <a href="#"><img src="https://img.shields.io/badge/interface-EN%20%2F%20PT-84BFCC?style=flat-square&labelColor=0A2F3A" alt="Bilingual"></a> <a href="https://doi.org/10.5281/zenodo.21959574"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.21959574.svg" alt="DOI"></a> <a href="CITATION.cff"><img src="https://img.shields.io/badge/cite-CITATION.cff-DCEEF2?style=flat-square&labelColor=0A2F3A" alt="Cite"></a></p>
+<p align="center"><a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-1.1.2-176578?style=flat-square&labelColor=0A2F3A" alt="Version"></a> <a href="LICENSE"><img src="https://img.shields.io/badge/license-CC%20BY%204.0-4E9346?style=flat-square&labelColor=0A2F3A" alt="License: CC BY 4.0"></a> <a href="https://www.projetobioe.com/plateprep.html"><img src="https://img.shields.io/badge/live%20app-projetobioe.com-1E7D91?style=flat-square&labelColor=0A2F3A" alt="Live app"></a> <a href="#"><img src="https://img.shields.io/badge/interface-EN%20%2F%20PT-84BFCC?style=flat-square&labelColor=0A2F3A" alt="Bilingual"></a> <a href="https://doi.org/10.5281/zenodo.21959574"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.21959574.svg" alt="DOI"></a> <a href="CITATION.cff"><img src="https://img.shields.io/badge/cite-CITATION.cff-DCEEF2?style=flat-square&labelColor=0A2F3A" alt="Cite"></a></p>
 
 **From field photographs to annotation-ready settlement-plate imagery — in the browser.**
 
@@ -63,12 +63,13 @@ single file statically over HTTPS — no build step, no backend.
 | `metadata_coralnet.csv` | One record per image with the columns CoralNet imports: `Name, Date, Experiment, Site, Treatment, Exposure_Days, Plate, Height (cm), Latitude, Longitude, Depth, Camera, Photographer, Water quality, Strobes, Framing gear used, White balance card, Comments`. `Exposure_Days` is computed from the deployment date; `Comments` carries the day's weather. |
 | `triage_mapping.csv` | Original photo → plate / treatment / sequence — a permanent record of the campaign photo log. |
 | `crop_manifest.csv` / `.json` | For every crop: the four source-image corner coordinates, working-canvas and source-file dimensions, output size, plate size and px/cm. Re-derive any crop; quantify between-operator variability from the manifests alone. |
+| `rederive_log.csv` / `render_audit.csv` | Written by the *Re-derive crops from a manifest* mode (welcome screen): per-crop source-resolution log and mesh-seam audit — the executable form of the manifest's reproducibility promise. |
 | `PlatePrep_ImageJ_scale.ijm` | ImageJ/Fiji macro that sets the global spatial calibration of the campaign's crops (`Set Scale… distance=<px> known=<cm> unit=cm global`). ImageJ's built-in JPEG reader ignores JFIF density, so run this once per session (*Plugins › Macros › Run…*). |
 
 The plate → treatment map of the Bioē coating experiment (30 plates, treatments A–F) is built in
 as a template and fully editable — including the treatment legend — for any other experiment.
 
-## Known limitations (v1.1.0)
+## Known limitations (v1.1.2)
 
 - Assumes flat, approximately square plates with all four corners visible; corner marking is
   manual (automatic corner detection is on the roadmap).
