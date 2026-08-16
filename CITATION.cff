@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it using these metadata."
 title: "PlatePrep: browser-based preparation of settlement-plate imagery for annotation platforms"
 version: 1.1.0
-doi: 10.5281/zenodo.21959574
+doi: 10.5281/zenodo.21960101
 date-released: 2026-08-16
 license: CC-BY-4.0
 type: software
@@ -12,6 +12,9 @@ identifiers:
   - type: doi
     value: 10.5281/zenodo.21959574
     description: "Concept DOI — resolves to the latest version"
+  - type: doi
+    value: 10.5281/zenodo.21960101
+    description: "Version DOI — v1.1.0"
   - type: doi
     value: 10.5281/zenodo.21959935
     description: "Version DOI — v1.0.5"
